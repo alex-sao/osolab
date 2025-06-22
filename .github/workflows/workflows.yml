@@ -1,11 +1,11 @@
-name: Python Security Audit
+name: Python SAST Scan - Bandit
 
 on:
   workflow_dispatch:
 
 jobs:
-  pip-audit:
-    name: SCA_pierwszy_scan_pip-audit
+  bandit-scan:
+    name: Bandita
     runs-on: ubuntu-latest
 
     steps:
@@ -17,22 +17,17 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
+      - name: Install Bandit
+        run: pip install bandit
+
+      - name: Run Bandit scan (non-blocking)
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          bandit -r . -f txt -o bandit-report.txt || true
+          echo "_bandit_report_"
+          cat bandit-report.txt
 
-      - name: Install pip-audit
-        run: pip install pip-audit
-
-      - name: Run pip-audit (non-blocking, log to file)
-        run: |
-          pip-audit > audit-report.txt || true
-          echo "_pip-audit_report_"
-          cat audit-report.txt
-
-      - name: Upload audit report as artifact
+      - name: Upload Bandit report
         uses: actions/upload-artifact@v4
         with:
-          name: pip-audit-report
-          path: audit-report.txt
+          name: bandit-report
+          path: bandit-report.txt
