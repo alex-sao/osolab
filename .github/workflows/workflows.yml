@@ -5,7 +5,7 @@ on:
 
 jobs:
   pip-audit:
-    name: pip-audit with logging
+    name: SCA_pierwszy_scan_pip-audit
     runs-on: ubuntu-latest
 
     steps:
@@ -28,7 +28,7 @@ jobs:
       - name: Run pip-audit (non-blocking, log to file)
         run: |
           pip-audit > audit-report.txt || true
-          echo "===== pip-audit report ====="
+          echo "_pip-audit_report_"
           cat audit-report.txt
 
       - name: Upload audit report as artifact
