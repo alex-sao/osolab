@@ -11,6 +11,7 @@ import string
 import subprocess
 import uuid
 from dataclasses import dataclass
+from hashlib import sha256
 from hashlib import md5
 from io import BytesIO
 from random import randint
@@ -1016,7 +1017,7 @@ def crypto_failure_lab(request):
             username = request.POST["username"]
             password = request.POST["password"]
             try:
-                password = md5(password.encode()).hexdigest()
+                password = sha256(password.encode()).hexdigest()
                 user = CF_user.objects.filter(username=username,password=password).first()
                 return render(request,"Lab_2021/A2_Crypto_failur/crypto_failure_lab.html",{"user":user, "success":True,"failure":False})
             except Exception as e:
