@@ -19,9 +19,7 @@ jobs:
 
       - name: Run TruffleHog (non-blocking)
         run: |
-          trufflehog filesystem . --json > trufflehog-report.json || true
-          echo "_Truffle_Secrets_"
-          cat trufflehog-report.json
+          trufflehog filesystem
 
       - name: Upload TruffleHog Report
         uses: actions/upload-artifact@v4
