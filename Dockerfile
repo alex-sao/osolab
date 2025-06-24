@@ -18,6 +18,7 @@ RUN python -m pip install --no-cache-dir pip==22.0.4
 COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 RUN apt-get remove --purge -y bind9-host && apt-get autoremove -y
+RUN apt-get update && apt-get install -y bind9-host
 
 
 # copy project
