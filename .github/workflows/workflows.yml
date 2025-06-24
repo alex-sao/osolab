@@ -1,40 +1,47 @@
-name: DAST
+name: DAST Nikto
 
 on:
   workflow_dispatch:
 
 jobs:
   dast:
-    name: Local Deploy + DAST Scan
     runs-on: ubuntu-latest
+    name: Run Nikto DAST scan
 
     steps:
-      - name: Checkout code
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Build app Docker image
+      - name: Build Docker image for app
         run: docker build -t my-temp-app .
 
-      - name: Run app in Docker (port 3000)
+      - name: Run app container (localhost:3000)
         run: docker run -d --name app -p 3000:3000 my-temp-app
 
       - name: Wait for app to be ready
         run: |
-          echo "Waiting for app to become healthy..."
+          echo "Waiting for app to respond..."
           for i in {1..15}; do
             curl -s http://localhost:3000 && break || sleep 2
           done
 
-      - name: Run Nmap DAST scan
+      - name: Run Nikto scan
         run: |
-          docker pull hysnsec/nmap
-          docker run --rm -v ${{ github.workspace }}:/tmp hysnsec/nmap \
-            -Pn http://host.docker.internal:3000 -oX /tmp/nmap-output.xml || true
-            
-      - name: Upload Nmap Report
+          docker pull sullo/nikto
+          mkdir nikto-reports
+          docker run --rm --network=host -v $(pwd)/nikto-reports:/tmp \
+            sullo/nikto \
+            -h http://localhost:3000 \
+            -o /tmp/nikto-report.txt \
+            -Format txt
+          docker run --rm --network=host -v $(pwd)/nikto-reports:/tmp \
+            sullo/nikto \
+            -h http://localhost:3000 \
+            -o /tmp/nikto-report.html \
+            -Format html
+
+      - name: Upload Nikto reports
         uses: actions/upload-artifact@v4
         with:
-          name: dast-nmap-report
-          path: |
-            nmap-report.xml
-            nmap-report.txt
+          name: nikto-dast-report
+          path: nikto-reports/
