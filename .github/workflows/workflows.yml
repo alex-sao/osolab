@@ -22,10 +22,10 @@ jobs:
 
       - name: Tag Docker image for GHCR
         run: |
-          IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/myapp:latest
+          IMAGE_NAME=ghcr.io/${{ github.push }}/myapp:latest
           docker tag myapp $IMAGE_NAME
 
       - name: Push Docker image to GHCR
         run: |
-          IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/myapp:latest
+          IMAGE_NAME=ghcr.io/${{ github.push }}/myapp:latest
           docker push $IMAGE_NAME
