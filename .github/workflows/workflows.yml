@@ -27,15 +27,15 @@ jobs:
 
       - name: Run Nikto scan
         run: |
-          docker pull sullo/nikto
+          docker pull vulhub/nikto
           mkdir nikto-reports
           docker run --rm --network=host -v $(pwd)/nikto-reports:/tmp \
-            sullo/nikto \
+            vulhub/nikto \
             -h http://localhost:3000 \
             -o /tmp/nikto-report.txt \
             -Format txt
           docker run --rm --network=host -v $(pwd)/nikto-reports:/tmp \
-            sullo/nikto \
+            vulhub/nikto \
             -h http://localhost:3000 \
             -o /tmp/nikto-report.html \
             -Format html
