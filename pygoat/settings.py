@@ -170,3 +170,26 @@ SOCIALACCOUNT_PROVIDERS = {
 
 SECRET_COOKIE_KEY = "PYGOAT"
 CSRF_TRUSTED_ORIGINS = ["http://127.0.0.1:8000","http://0.0.0.0:8000","http://172.16.189.10"]
+
+SECURE_HSTS_SECONDS = 63072000
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_BROWSER_XSS_FILTER = True
+
+MIDDLEWARE += [
+    'django.middleware.security.SecurityMiddleware',
+]
+
+class SecurityHeadersMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        response["Permissions-Policy"] = "geolocation=(), camera=(), microphone=()"
+        response["Content-Security-Policy"] = "default-src 'self';"
+        return response
+  MIDDLEWARE += [
+    'django.middleware.SecurityHeadersMiddleware',
+]      
