@@ -1,34 +1,38 @@
-name: Trivy Scan (Docker Image)
+name: Trivy Image Scan
 
 on:
   workflow_dispatch:
-  
+
 jobs:
   trivy-scan:
-    name: Scan Docker Image with Trivy
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v3
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    - name: Build Docker image (local)
-      run: docker build -t my-app:latest .
+      - name: Build Docker image (bez pusha)
+        run: docker build -t myapp:latest .
 
-    - name: Install Trivy
-      run: |
-        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+      - name: Install Trivy
+        run: |
+          sudo apt-get update
+          sudo apt-get install wget -y
+          wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.51.1_Linux-64bit.deb
+          sudo dpkg -i trivy_0.51.1_Linux-64bit.deb
 
-    - name: Run Trivy scan and generate HTML report
-      run: |
-        mkdir -p trivy-reports
-        trivy image --severity HIGH,CRITICAL --format template --template "@/usr/local/share/trivy/templates/html.tpl" -o trivy-reports/report.html my-app:latest
+      - name: Run Trivy image scan (HTML report)
+        run: |
+          mkdir -p trivy-reports
+          trivy image --format template --template "@/usr/local/share/trivy/templates/html.tpl" \
+            --output trivy-reports/report.html \
+            --severity HIGH,CRITICAL myapp:latest
 
-    - name: Upload Trivy report
-      uses: actions/upload-artifact@v4
-      with:
-        name: trivy-html-report
-        path: trivy-reports/report.html
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-html-report
+          path: trivy-reports/report.html
