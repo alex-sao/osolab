@@ -27,18 +27,17 @@ jobs:
 
       - name: Run Nikto scan
         run: |
-          docker pull vulhub/nikto
           mkdir nikto-reports
-          docker run --rm --network=host -v $(pwd)/nikto-reports:/tmp \
-            vulhub/nikto \
-            -h http://localhost:3000 \
-            -o /tmp/nikto-report.txt \
-            -Format txt
-          docker run --rm --network=host -v $(pwd)/nikto-reports:/tmp \
-            vulhub/nikto \
-            -h http://localhost:3000 \
-            -o /tmp/nikto-report.html \
-            -Format html
+          docker run --rm --network=host -v $(pwd)/nikto-reports:/nikto \
+            alpine:3.19 sh -c "
+              apk add --no-cache perl wget unzip git &&
+              git clone https://github.com/sullo/nikto.git /nikto-src &&
+              cd /nikto-src &&
+              perl nikto.pl -h http://localhost:3000 \
+                            -o /nikto/nikto-report.html -Format html &&
+              perl nikto.pl -h http://localhost:3000 \
+                            -o /nikto/nikto-report.txt -Format txt
+            "
 
       - name: Upload Nikto reports
         uses: actions/upload-artifact@v4
