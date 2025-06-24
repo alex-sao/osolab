@@ -7,25 +7,37 @@ jobs:
   trivy-scan:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: pass
+          POSTGRES_DB: dbname
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U user"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # - name: Set up Docker Buildx
-      #   uses: docker/setup-buildx-action@v3
-
       - name: Build Docker image (bez pusha)
         run: docker build -t myapp:latest .
 
-      - name: Run container
+      - name: Run container with DB connection
         run: |
           docker run -d --name myapp \
-            -e DATABASE_URL=postgres://user:pass@host:5432/dbname \
+            -e DATABASE_URL=postgres://user:pass@localhost:5432/dbname \
             myapp:latest
-      
-      - name: Wait for DB
-        run: sleep 10  
-      
+
+      - name: Wait for DB to be ready
+        run: sleep 15
+
       - name: Run Django migrations
         run: docker exec myapp python /app/manage.py migrate
 
@@ -48,3 +60,8 @@ jobs:
         with:
           name: trivy-html-report
           path: trivy-reports/report.html
+
+      - name: Cleanup container
+        run: |
+          docker stop myapp
+          docker rm myapp
