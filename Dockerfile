@@ -1,5 +1,4 @@
-FROM python:3.11.0b1-buster
-
+FROM python:3.11-slim-bookworm
 
 # set work directory
 WORKDIR /app
@@ -18,6 +17,7 @@ ENV PYTHONUNBUFFERED=1
 RUN python -m pip install --no-cache-dir pip==22.0.4
 COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
+RUN apt-get remove --purge -y bind9-host && apt-get autoremove -y
 
 
 # copy project
