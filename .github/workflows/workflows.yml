@@ -15,14 +15,14 @@ jobs:
       - name: Build Docker image for app
         run: docker build -t my-temp-app .
 
-      - name: Run app container (localhost:3000)
-        run: docker run -d --name app -p 3000:3000 my-temp-app
+      - name: Run app container (localhost:8000)
+        run: docker run -d --name app -p 8000:8000 my-temp-app
 
       - name: Wait for app to be ready
         run: |
           echo "Waiting for app to respond..."
           for i in {1..15}; do
-            curl -s http://localhost:3000 && break || sleep 2
+            curl -s http://localhost:8000 && break || sleep 2
           done
 
       - name: Run Nikto scan
@@ -33,9 +33,9 @@ jobs:
               apk add --no-cache perl wget unzip git &&
               git clone https://github.com/sullo/nikto.git /nikto-src &&
               cd /nikto-src/program &&
-              perl nikto.pl -h http://localhost:3000 \
+              perl nikto.pl -h http://localhost:8000 \
                             -o /nikto/nikto-report.html -Format html &&
-              perl nikto.pl -h http://localhost:3000 \
+              perl nikto.pl -h http://localhost:8000 \
                             -o /nikto/nikto-report.txt -Format txt
             "
 
