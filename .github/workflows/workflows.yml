@@ -1,91 +1,40 @@
-name: Release + DAST + Cleanup
+name: DAST
 
 on:
   workflow_dispatch:
 
-env:
-  IMAGE_NAME: ghcr.io/${{ github.repository }}/rails:0.1
-
 jobs:
-
-  release:
-    name: Build & Push Docker Image
+  dast:
+    name: Local Deploy + DAST Scan
     runs-on: ubuntu-latest
-    permissions:
-      packages: write
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build app Docker image
+        run: docker build -t my-temp-app .
 
-      - name: Build Docker image
-        run: docker build --network host -t $IMAGE_NAME .
-
-      - name: Push Docker image
-        run: docker push $IMAGE_NAME
-
-  staging:
-    name: Deploy to Staging (Helm)
-    needs: release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set up Helm
-        uses: azure/setup-helm@v4
-
-      - name: Deploy Helm chart
-        run: |
-          helm repo add local ./helm
-          helm install staging ./helm --values=./helm/values.yaml --namespace default || \
-          helm upgrade staging ./helm --values=./helm/values.yaml --namespace default
-
-  dast:
-    name: Run Nmap Scan (DAST)
-    needs: release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Pull Nmap image
-        run: docker pull hysnsec/nmap
-
-      - name: Run app container (port 3000)
-        run: docker run -d --rm --name temp-app -p 3000:3000 $IMAGE_NAME
+      - name: Run app in Docker (port 3000)
+        run: docker run -d --name app -p 3000:3000 my-temp-app
 
       - name: Wait for app to be ready
         run: |
-          for i in {1..10}; do
-            if curl -sSf http://localhost:3000 > /dev/null; then
-              echo "App is ready"
-              break
-            else
-              echo "Waiting..."
-              sleep 3
-            fi
+          echo "Waiting for app to become healthy..."
+          for i in {1..15}; do
+            curl -s http://localhost:3000 && break || sleep 2
           done
 
-      - name: Run Nmap scan
+      - name: Run Nmap DAST scan
         run: |
+          docker pull hysnsec/nmap
           docker run --rm -v ${{ github.workspace }}:/tmp hysnsec/nmap \
             -Pn http://host.docker.internal:3000 -oX /tmp/nmap-output.xml || true
-
-      - name: Upload scan result
+            
+      - name: Upload Nmap Report
         uses: actions/upload-artifact@v4
         with:
-          name: nmap-output
-          path: nmap-output.xml
-
-  remove-staging:
-    name: Cleanup Staging (Manual)
-    needs: [staging, dast]
-    runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' }}
-    steps:
-      - name: Set up Helm
-        uses: azure/setup-helm@v4
-
-      - name: Uninstall Helm release
-        run: helm uninstall staging --namespace default
+          name: dast-nmap-report
+          path: |
+            nmap-report.xml
+            nmap-report.txt
