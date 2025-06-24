@@ -1,4 +1,4 @@
-name: Trivy Image Scan
+name: Trivy!
 
 on:
   workflow_dispatch:
@@ -7,61 +7,30 @@ jobs:
   trivy-scan:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: user
-          POSTGRES_PASSWORD: pass
-          POSTGRES_DB: dbname
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd="pg_isready -U user"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Build Docker image (bez pusha)
-        run: docker build -t myapp:latest .
-
-      - name: Run container with DB connection
-        run: |
-          docker run -d --name myapp \
-            -e DATABASE_URL=postgres://user:pass@localhost:5432/dbname \
-            myapp:latest
-
-      - name: Wait for DB to be ready
-        run: sleep 15
-
-      - name: Run Django migrations
-        run: docker exec myapp python /app/manage.py migrate
+      - name: Build Docker image
+        run: docker build -t diwa .
 
       - name: Install Trivy
         run: |
           sudo apt-get update
-          sudo apt-get install wget -y
-          wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.51.1_Linux-64bit.deb
-          sudo dpkg -i trivy_0.51.1_Linux-64bit.deb
+          sudo apt-get install -y wget curl
+          TRIVY_VERSION=$(curl -s https://api.github.com/repos/aquasecurity/trivy/releases/latest | grep tag_name | cut -d '"' -f 4)
+          wget https://github.com/aquasecurity/trivy/releases/download/${TRIVY_VERSION}/trivy_${TRIVY_VERSION#v}_Linux-64bit.deb
+          sudo dpkg -i trivy_${TRIVY_VERSION#v}_Linux-64bit.deb
 
-      - name: Run Trivy image scan (HTML report)
+      - name: Download Trivy HTML template
+        run: curl -sSL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/html.tpl -o html.tpl
+
+      - name: Run Trivy
         run: |
-          mkdir -p trivy-reports
-          trivy image --format template --template "@/usr/local/share/trivy/templates/html.tpl" \
-            --output trivy-reports/report.html \
-            --severity HIGH,CRITICAL myapp:latest
+          trivy image --format template --template @html.tpl -o trivy-report.html diwa
 
-      - name: Upload HTML report
+      - name: Upload Trivy-report
         uses: actions/upload-artifact@v4
         with:
-          name: trivy-html-report
-          path: trivy-reports/report.html
-
-      - name: Cleanup container
-        run: |
-          docker stop myapp
-          docker rm myapp
+          name: trivy-report-${{ github.run_id }}
+          path: trivy-report.html
