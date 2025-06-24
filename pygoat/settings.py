@@ -177,3 +177,10 @@ MEDIA_URL = '/media/'
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 CSRF_COOKIE_HTTPONLY = True  
 CSRF_COOKIE_SECURE = True  
+
+INSTALLED_APPS += ['axes']
+MIDDLEWARE = ['axes.middleware.AxesMiddleware'] + MIDDLEWARE
+
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 1  # godzina
+AXES_LOCKOUT_TEMPLATE = 'account_locked.html'
